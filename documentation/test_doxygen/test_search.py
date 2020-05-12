@@ -44,7 +44,7 @@ class Search(IntegrationTestCase):
             serialized = f.read()
             search_data_pretty = pretty_print(serialized, entryTypeClass=EntryType)[0]
         #print(search_data_pretty)
-        self.assertEqual(len(serialized), 4836)
+        self.assertEqual(len(serialized), 5074)
         self.assertEqual(search_data_pretty, """
 53 symbols
 deprecated_macro [0]
@@ -239,7 +239,7 @@ class SearchLongSuffixLength(IntegrationTestCase):
             serialized = f.read()
             search_data_pretty = pretty_print(serialized, entryTypeClass=EntryType)[0]
         #print(search_data_pretty)
-        self.assertEqual(len(serialized), 473)
+        self.assertEqual(len(serialized), 485)
         # The parameters get cut off with an ellipsis
         self.assertEqual(search_data_pretty, """
 2 symbols

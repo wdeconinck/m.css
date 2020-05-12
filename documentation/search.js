@@ -25,7 +25,7 @@
 "use strict"; /* it summons the Cthulhu in a proper way, they say */
 
 var Search = {
-    formatVersion: 1, /* the data filename contains this number too */
+    formatVersion: 100, /* the data filename contains this number too */
 
     dataSize: 0, /* used mainly by tests, not here */
     symbolCount: '&hellip;',
@@ -57,7 +57,7 @@ var Search = {
 
         /* The file is too short to contain at least the headers and empty
            sections */
-        if(view.byteLength < 26) {
+        if(view.byteLength < 28) {
             console.error("Search data too short");
             return false;
         }
@@ -75,15 +75,15 @@ var Search = {
         }
 
         /* Separate the data into the trie and the result map */
-        let mapOffset = view.getUint32(6, true);
-        let typeMapOffset = view.getUint32(10, true);
-        this.trie = new DataView(buffer, 14, mapOffset - 14);
+        let mapOffset = view.getUint32(8, true);
+        let typeMapOffset = view.getUint32(12, true);
+        this.trie = new DataView(buffer, 16, mapOffset - 16);
         this.map = new DataView(buffer, mapOffset, typeMapOffset - mapOffset);
         this.typeMap = new DataView(buffer, typeMapOffset);
 
         /* Set initial properties */
         this.dataSize = buffer.byteLength;
-        this.symbolCount = view.getUint16(4, true) + " symbols (" + Math.round(this.dataSize/102.4)/10 + " kB)";
+        this.symbolCount = view.getUint32(4, true) + " symbols (" + Math.round(this.dataSize/102.4)/10 + " kB)";
         this.maxResults = maxResults ? maxResults : 100;
         this.searchString = '';
         this.searchStack = [this.trie.getUint32(0, true)];
@@ -256,7 +256,7 @@ var Search = {
         for(; foundPrefix != searchString.length; ++foundPrefix) {
             /* Calculate offset and count of children */
             let offset = this.searchStack[this.searchStack.length - 1];
-            let relChildOffset = 2 + this.trie.getUint8(offset)*2;
+            let relChildOffset = 2 + this.trie.getUint8(offset)*4;
 
             /* Calculate child count. If there's a lot of results, the count
                "leaks over" to the child count storage. */
@@ -330,7 +330,7 @@ var Search = {
 
             /* Populate the results with all values associated with this node */
             for(let i = 0; i != resultCount; ++i) {
-                let index = this.trie.getUint16(offset + 2 + i*2, true);
+                let index = this.trie.getUint32(offset + 2 + i*4, true);
                 results.push(this.gatherResult(index, suffixLength, 0xffffff)); /* should be enough haha */
 
                 /* 'nuff said. */
@@ -340,7 +340,7 @@ var Search = {
 
             /* Dig deeper */
             /* TODO: hmmm. this is helluvalot duplicated code. hmm. */
-            let relChildOffset = 2 + this.trie.getUint8(offset)*2;
+            let relChildOffset = 2 + this.trie.getUint8(offset)*4;
             let childOffset = offset + relChildOffset;
             for(let j = 0; j != childCount; ++j) {
                 let offsetBarrier = this.trie.getUint32(childOffset + j*4, true);
@@ -374,22 +374,22 @@ var Search = {
         /* The result is an alias, parse the aliased prefix */
         let aliasedIndex = null;
         if((flags & 0xf0) == 0x00) {
-            aliasedIndex = this.map.getUint16(resultOffset, true);
-            resultOffset += 2;
+            aliasedIndex = this.map.getUint32(resultOffset, true);
+            resultOffset += 4;
         }
 
         /* The result has a prefix, parse that first, recursively */
         let name = '';
         let url = '';
         if(flags & (1 << 3)) {
-            let prefixIndex = this.map.getUint16(resultOffset, true);
-            let prefixUrlPrefixLength = Math.min(this.map.getUint8(resultOffset + 2), maxUrlPrefix);
+            let prefixIndex = this.map.getUint32(resultOffset, true);
+            let prefixUrlPrefixLength = Math.min(this.map.getUint8(resultOffset + 4), maxUrlPrefix);
 
             let prefix = this.gatherResult(prefixIndex, 0 /*ignored*/, prefixUrlPrefixLength);
             name = prefix.name;
             url = prefix.url;
 
-            resultOffset += 3;
+            resultOffset += 5;
         }
 
         /* The result has a suffix, extract its length */

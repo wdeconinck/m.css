@@ -32,7 +32,8 @@ from types import SimpleNamespace as Empty
 from typing import List, Tuple
 
 # Version 0 was without the type map
-searchdata_format_version = 1
+# Version 1 is with 65k symbols at most, version 100 with 32-bit fields instead
+searchdata_format_version = 100
 search_filename = f'search-v{searchdata_format_version}.js'
 searchdata_filename = f'searchdata-v{searchdata_format_version}.bin'
 searchdata_filename_b85 = f'searchdata-v{searchdata_format_version}.js'
@@ -108,25 +109,25 @@ class ResultMap:
     #
     #  prefix  |  name  | \0 |  URL
     # id + len | suffix |    | suffix
-    # 16b + 8b |        | 8b |
+    # 32b + 8b |        | 8b |
     #
     # prefixed & suffixed item (flags & 0xb11 == 0b11):
     #
     #  prefix  | suffix |  name  | \0 | URL
     # id + len | length | suffix |    |
-    # 16b + 8b |   8b   |        | 8b |
+    # 32b + 8b |   8b   |        | 8b |
     #
     # alias item (flags & 0xf0 == 0x00):
     #
     # alias |     | alias
     #  id   | ... | name
-    #  16b  |     |
+    #  32b  |     |
     #
     offset_struct = struct.Struct('<I')
     flags_struct = struct.Struct('<B')
-    prefix_struct = struct.Struct('<HB')
+    prefix_struct = struct.Struct('<IB')
     suffix_length_struct = struct.Struct('<B')
-    alias_struct = struct.Struct('<H')
+    alias_struct = struct.Struct('<I')
 
     def __init__(self):
         self.entries = []
@@ -274,17 +275,17 @@ class ResultMap:
 class Trie:
     #  root  |     |       header         | results | child 1 | child 1 | child 1 |
     # offset | ... | | result # | child # |   ...   |  char   | barrier | offset  | ...
-    #  32b   |     |0|    7b    |   8b    |  n*16b  |   8b    |    1b   |   23b   |
+    #  32b   |     |0|    7b    |   8b    |  n*32b  |   8b    |    1b   |   23b   |
     #
     # if result count > 127, it's instead:
     #
     #  root  |     |      header          | results | child 1 | child 1 | child 1 |
     # offset | ... | | result # | child # |   ...   |  char   | barrier | offset  | ...
-    #  32b   |     |1|   11b    |   4b    |  n*16b  |   8b    |    1b   |   23b   |
+    #  32b   |     |1|   11b    |   4b    |  n*32b  |   8b    |    1b   |   23b   |
 
     root_offset_struct = struct.Struct('<I')
     header_struct = struct.Struct('<BB')
-    result_struct = struct.Struct('<H')
+    result_struct = struct.Struct('<I')
     child_struct = struct.Struct('<I')
     child_char_struct = struct.Struct('<B')
 
@@ -421,8 +422,8 @@ def serialize_type_map(map: List[Tuple[CssClass, str]]) -> bytearray:
 # magic  | version | symbol | result |  type  |
 # header |         | count  |  map   |  map   |
 #        |         |        | offset | offset |
-#  24b   |   8b    |  16b   |  32b   |  32b   |
-search_data_header_struct = struct.Struct('<3sBHII')
+#  24b   |   8b    |  32b   |  32b   |  32b   |
+search_data_header_struct = struct.Struct('<3sBIII')
 
 def serialize_search_data(trie: Trie, map: ResultMap, type_map: List[Tuple[CssClass, str]], symbol_count, *, merge_subtrees=True, merge_prefixes=True) -> bytearray:
     serialized_trie = trie.serialize(merge_subtrees=merge_subtrees)

@@ -58,7 +58,7 @@ class TrieSerialization(unittest.TestCase):
         self.compare(serialized, """
 magnum [1337, 21]
 """)
-        self.assertEqual(len(serialized), 46)
+        self.assertEqual(len(serialized), 50)
 
     def test_multiple(self):
         trie = Trie()
@@ -123,7 +123,7 @@ range [2]
 |     :min [9]
 |       ax [10]
 """)
-        self.assertEqual(len(serialized), 340)
+        self.assertEqual(len(serialized), 378)
 
     def test_unicode(self):
         trie = Trie()
@@ -145,7 +145,7 @@ h0xc3
   |  0xa1
   |    [1]
 """)
-        self.assertEqual(len(serialized), 82)
+        self.assertEqual(len(serialized), 86)
 
 class MapSerialization(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -195,7 +195,7 @@ class MapSerialization(unittest.TestCase):
 5: Rectangle [alias=2] ->
 6: ::Rect() [alias=2, prefix=5[:0], suffix_length=2] ->
 """)
-        self.assertEqual(len(serialized), 203)
+        self.assertEqual(len(serialized), 217)
 
 class Serialization(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -235,4 +235,4 @@ range [2]
 (EntryType.CLASS, CssClass.PRIMARY, 'class'),
 (EntryType.FUNC, CssClass.INFO, 'func')
 """)
-        self.assertEqual(len(serialized), 277)
+        self.assertEqual(len(serialized), 289)
