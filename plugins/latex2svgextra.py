@@ -48,6 +48,7 @@ params.update({
 \usepackage{amssymb}
 \usepackage{gensymb}
 \usepackage{newtxtext}
+\usepackage{mathtools}
 
 \usepackage{xcolor}
 \definecolor{m-default}{HTML}{caFe03}
